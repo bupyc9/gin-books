@@ -4,10 +4,6 @@ WORKDIR /app
 
 COPY /src ./
 
-RUN go build
-
-FROM alpine:3.24
-
-COPY --from=build /app/books /usr/local/bin
+RUN go build -o /usr/local/bin
 
 CMD ["/usr/local/bin/books"]
