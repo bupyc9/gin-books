@@ -12,12 +12,12 @@ import (
 	"gorm.io/gorm"
 )
 
-type ValidationError struct {
+type ValidationResponse struct {
 	Message string            `json:"message"`
 	Errors  map[string]string `json:"errors"`
 }
 
-type Error struct {
+type MessageResponse struct {
 	Message string `json:"message"`
 }
 
@@ -52,15 +52,27 @@ func errorHandler() gin.HandlerFunc {
 			return
 		}
 
-		context.JSON(http.StatusInternalServerError, Error{Message: err.Error()})
+		if errors.Is(err, gorm.ErrRecordNotFound) {
+			recordNotFound(err, context)
+
+			return
+		}
+
+		context.JSON(http.StatusInternalServerError, MessageResponse{Message: err.Error()})
 	}
 }
 
 func validationError(validateErrs validator.ValidationErrors, context *gin.Context) {
-	response := ValidationError{Message: "Validation Error"}
+	response := ValidationResponse{Message: "Validation Error"}
 	response.Errors = make(map[string]string)
 	for _, e := range validateErrs {
 		response.Errors[e.Field()] = e.Tag()
 	}
 	context.JSON(http.StatusUnprocessableEntity, response)
+}
+
+func recordNotFound(err error, context *gin.Context) {
+	response := MessageResponse{Message: err.Error()}
+
+	context.JSON(http.StatusNotFound, response)
 }

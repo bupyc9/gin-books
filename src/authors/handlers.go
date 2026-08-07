@@ -21,6 +21,7 @@ func (handler handler) Route(router *gin.RouterGroup) {
 	authors := router.Group("/authors")
 
 	authors.POST("", handler.create)
+	authors.GET("/:id", handler.find)
 }
 
 func (handler handler) create(context *gin.Context) {
@@ -39,4 +40,18 @@ func (handler handler) create(context *gin.Context) {
 	}
 
 	context.JSON(http.StatusCreated, author)
+}
+
+func (handler handler) find(context *gin.Context) {
+	id := context.Param("id")
+
+	var author Author
+	result := handler.DB.First(&author, id)
+	if result.Error != nil && errors.Is(result.Error, gorm.ErrRecordNotFound) {
+		context.Error(result.Error)
+
+		return
+	}
+
+	context.JSON(http.StatusOK, author)
 }
