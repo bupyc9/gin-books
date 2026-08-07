@@ -22,6 +22,7 @@ func (handler handler) Route(router *gin.RouterGroup) {
 
 	authors.POST("", handler.create)
 	authors.GET("/:id", handler.find)
+	authors.DELETE("/:id", handler.delete)
 }
 
 func (handler handler) create(context *gin.Context) {
@@ -54,4 +55,20 @@ func (handler handler) find(context *gin.Context) {
 	}
 
 	context.JSON(http.StatusOK, author)
+}
+
+func (handler handler) delete(context *gin.Context) {
+	id := context.Param("id")
+
+	var author Author
+	result := handler.DB.First(&author, id)
+	if result.Error != nil && errors.Is(result.Error, gorm.ErrRecordNotFound) {
+		context.Error(result.Error)
+
+		return
+	}
+
+	handler.DB.Delete(&author)
+
+	context.Status(http.StatusNoContent)
 }

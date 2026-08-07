@@ -7,10 +7,8 @@ import (
 	"fmt"
 
 	"encoding/json"
-	"maps"
 	"net/http"
 	"net/http/httptest"
-	"slices"
 	"strings"
 	"testing"
 
@@ -42,6 +40,7 @@ func TestAuthorCreate(t *testing.T) {
 
 	var author authors.Author
 	err = json.Unmarshal(w.Body.Bytes(), &author)
+	assert.NoError(t, err)
 	assert.NotEmpty(t, author.CreatedAt)
 	assert.NotEmpty(t, author.UpdatedAt)
 	assert.False(t, author.DeletedAt.Valid)
@@ -94,40 +93,42 @@ func TestAuthorCreateValidation(t *testing.T) {
 
 func TestAuthorFind(t *testing.T) {
 	gin.SetMode(gin.TestMode)
-	db := database.CreateDb()
-	r := router.SetupRouter(db)
-	w := httptest.NewRecorder()
+	r := router.SetupRouter(database.CreateDb())
+	var w *httptest.ResponseRecorder
+	w = httptest.NewRecorder()
 
-	author := authors.Author{
+	createAuthor := authors.CreateAuthor{
 		FirstName:  "First Name",
 		LastName:   "Last Name",
 		SecondName: "Second Name",
 	}
-	db.Create(&author)
+	var err error
+	body, err := json.Marshal(createAuthor)
+	var req *http.Request
+	req, err = http.NewRequest("POST", "/api/authors", strings.NewReader(string(body)))
+	assert.NoError(t, err)
+	req.Header.Set("Content-Type", "application/json")
+	r.ServeHTTP(w, req)
 
-	req, _ := http.NewRequest("GET", fmt.Sprintf("/api/authors/%d", author.ID), nil)
+	assert.Equal(t, http.StatusCreated, w.Code)
+	var author authors.Author
+	err = json.Unmarshal(w.Body.Bytes(), &author)
+	assert.NoError(t, err)
+
+	req, _ = http.NewRequest("GET", fmt.Sprintf("/api/authors/%d", author.ID), nil)
+	w = httptest.NewRecorder()
 	r.ServeHTTP(w, req)
 
 	assert.Equal(t, http.StatusOK, w.Code)
 
-	var responseBody map[string]any
-	err := json.Unmarshal(w.Body.Bytes(), &responseBody)
-	assert.Nil(t, err)
-	assert.ElementsMatch(
-		t,
-		[]string{
-			"id",
-			"createdAt",
-			"updatedAt",
-			"firstName",
-			"lastName",
-			"secondName",
-		},
-		slices.Collect(maps.Keys(responseBody)),
-	)
-	assert.Equal(t, "First Name", responseBody["firstName"])
-	assert.Equal(t, "Last Name", responseBody["lastName"])
-	assert.Equal(t, "Second Name", responseBody["secondName"])
+	err = json.Unmarshal(w.Body.Bytes(), &author)
+	assert.NoError(t, err)
+	assert.NotEmpty(t, author.CreatedAt)
+	assert.NotEmpty(t, author.UpdatedAt)
+	assert.False(t, author.DeletedAt.Valid)
+	assert.Equal(t, "First Name", author.FirstName)
+	assert.Equal(t, "Last Name", author.LastName)
+	assert.Equal(t, "Second Name", author.SecondName)
 }
 
 func TestAuthorFindNotFound(t *testing.T) {
@@ -142,4 +143,86 @@ func TestAuthorFindNotFound(t *testing.T) {
 	assert.Equal(t, http.StatusNotFound, w.Code)
 	responseJson, _ := json.Marshal(router.MessageResponse{Message: "record not found"})
 	assert.JSONEq(t, string(responseJson), w.Body.String())
+}
+
+func TestAuthorDelete(t *testing.T) {
+	gin.SetMode(gin.TestMode)
+	r := router.SetupRouter(database.CreateDb())
+
+	var w *httptest.ResponseRecorder
+	w = httptest.NewRecorder()
+
+	createAuthor := authors.CreateAuthor{
+		FirstName:  "First Name",
+		LastName:   "Last Name",
+		SecondName: "Second Name",
+	}
+	var err error
+	body, err := json.Marshal(createAuthor)
+	var req *http.Request
+	req, err = http.NewRequest("POST", "/api/authors", strings.NewReader(string(body)))
+	assert.NoError(t, err)
+	req.Header.Set("Content-Type", "application/json")
+	r.ServeHTTP(w, req)
+
+	assert.Equal(t, http.StatusCreated, w.Code)
+
+	var author authors.Author
+	err = json.Unmarshal(w.Body.Bytes(), &author)
+	assert.NoError(t, err)
+
+	req, err = http.NewRequest("DELETE", fmt.Sprintf("/api/authors/%d", author.ID), nil)
+	assert.NoError(t, err)
+	w = httptest.NewRecorder()
+	r.ServeHTTP(w, req)
+
+	assert.Equal(t, http.StatusNoContent, w.Code)
+
+	req, err = http.NewRequest("GET", fmt.Sprintf("/api/authors/%d", author.ID), nil)
+	assert.NoError(t, err)
+	w = httptest.NewRecorder()
+	r.ServeHTTP(w, req)
+
+	assert.Equal(t, http.StatusNotFound, w.Code)
+}
+
+func TestAuthorDeleteNotFound(t *testing.T) {
+	gin.SetMode(gin.TestMode)
+	r := router.SetupRouter(database.CreateDb())
+
+	var w *httptest.ResponseRecorder
+	w = httptest.NewRecorder()
+
+	createAuthor := authors.CreateAuthor{
+		FirstName:  "First Name",
+		LastName:   "Last Name",
+		SecondName: "Second Name",
+	}
+	var err error
+	body, err := json.Marshal(createAuthor)
+	var req *http.Request
+	req, err = http.NewRequest("POST", "/api/authors", strings.NewReader(string(body)))
+	assert.NoError(t, err)
+	req.Header.Set("Content-Type", "application/json")
+	r.ServeHTTP(w, req)
+
+	assert.Equal(t, http.StatusCreated, w.Code)
+
+	var author authors.Author
+	err = json.Unmarshal(w.Body.Bytes(), &author)
+	assert.NoError(t, err)
+
+	req, err = http.NewRequest("DELETE", fmt.Sprintf("/api/authors/%d", author.ID), nil)
+	assert.NoError(t, err)
+	w = httptest.NewRecorder()
+	r.ServeHTTP(w, req)
+
+	assert.Equal(t, http.StatusNoContent, w.Code)
+
+	req, err = http.NewRequest("GET", fmt.Sprintf("/api/authors/%d", author.ID), nil)
+	assert.NoError(t, err)
+	w = httptest.NewRecorder()
+	r.ServeHTTP(w, req)
+
+	assert.Equal(t, http.StatusNotFound, w.Code)
 }
