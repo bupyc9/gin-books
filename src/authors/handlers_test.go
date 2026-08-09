@@ -2,8 +2,8 @@ package authors_test
 
 import (
 	"books/authors"
-	"books/database"
 	"books/router"
+	"books/tests"
 	"encoding/json"
 	"fmt"
 	"net/http"
@@ -12,20 +12,16 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/gin-gonic/gin"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
+	"github.com/stretchr/testify/suite"
 )
 
-func TestAuthorCreate(t *testing.T) {
-	gin.SetMode(gin.TestMode)
+type AuthorsTestSuite struct {
+	tests.DatabaseTestSuite
+}
 
-	db := database.CreateDb()
-	transaction := db.Begin()
-	defer transaction.Rollback()
-
-	r := router.SetupRouter(transaction)
-
+func (suite *AuthorsTestSuite) TestAuthorCreate() {
 	var w *httptest.ResponseRecorder
 	w = httptest.NewRecorder()
 
@@ -38,42 +34,34 @@ func TestAuthorCreate(t *testing.T) {
 	body, err := json.Marshal(createAuthor)
 	var req *http.Request
 	req, err = http.NewRequest("POST", "/api/authors", strings.NewReader(string(body)))
-	assert.NoError(t, err)
+	assert.NoError(suite.T(), err)
 	req.Header.Set("Content-Type", "application/json")
-	r.ServeHTTP(w, req)
+	suite.Router.ServeHTTP(w, req)
 
-	require.Equal(t, http.StatusCreated, w.Code)
+	require.Equal(suite.T(), http.StatusCreated, w.Code)
 
 	var author authors.Author
 	err = json.Unmarshal(w.Body.Bytes(), &author)
-	require.NoError(t, err)
-	assert.NotEmpty(t, author.CreatedAt)
-	assert.NotEmpty(t, author.UpdatedAt)
-	assert.False(t, author.DeletedAt.Valid)
-	assert.Equal(t, "First Name", author.FirstName)
-	assert.Equal(t, "Last Name", author.LastName)
-	assert.Equal(t, "Second Name", author.SecondName)
+	require.NoError(suite.T(), err)
+	assert.NotEmpty(suite.T(), author.CreatedAt)
+	assert.NotEmpty(suite.T(), author.UpdatedAt)
+	assert.False(suite.T(), author.DeletedAt.Valid)
+	assert.Equal(suite.T(), "First Name", author.FirstName)
+	assert.Equal(suite.T(), "Last Name", author.LastName)
+	assert.Equal(suite.T(), "Second Name", author.SecondName)
 
 	req, err = http.NewRequest("GET", fmt.Sprintf("/api/authors/%d", author.ID), nil)
-	assert.NoError(t, err)
+	assert.NoError(suite.T(), err)
 	w = httptest.NewRecorder()
-	r.ServeHTTP(w, req)
+	suite.Router.ServeHTTP(w, req)
 
-	assert.Equal(t, http.StatusOK, w.Code)
+	assert.Equal(suite.T(), http.StatusOK, w.Code)
 }
 
-func TestAuthorCreateValidation(t *testing.T) {
-	gin.SetMode(gin.TestMode)
-
-	db := database.CreateDb()
-	transaction := db.Begin()
-	defer transaction.Rollback()
-
-	r := router.SetupRouter(transaction)
-
+func (suite *AuthorsTestSuite) TestAuthorCreateValidation() {
 	w := httptest.NewRecorder()
 
-	tests := []struct {
+	testList := []struct {
 		name         string
 		requestBody  map[string]any
 		responseBody router.ValidationResponse
@@ -88,12 +76,12 @@ func TestAuthorCreateValidation(t *testing.T) {
 		},
 	}
 
-	for _, tt := range tests {
-		t.Run(tt.name, func(t *testing.T) {
+	for _, tt := range testList {
+		suite.T().Run(tt.name, func(t *testing.T) {
 			body, _ := json.Marshal(tt.requestBody)
 			req, _ := http.NewRequest("POST", "/api/authors", strings.NewReader(string(body)))
 			req.Header.Set("Content-Type", "application/json")
-			r.ServeHTTP(w, req)
+			suite.Router.ServeHTTP(w, req)
 
 			require.Equal(t, http.StatusUnprocessableEntity, w.Code)
 			responseJson, _ := json.Marshal(tt.responseBody)
@@ -102,15 +90,7 @@ func TestAuthorCreateValidation(t *testing.T) {
 	}
 }
 
-func TestAuthorFind(t *testing.T) {
-	gin.SetMode(gin.TestMode)
-
-	db := database.CreateDb()
-	transaction := db.Begin()
-	defer transaction.Rollback()
-
-	r := router.SetupRouter(transaction)
-
+func (suite *AuthorsTestSuite) TestAuthorFind() {
 	var w *httptest.ResponseRecorder
 	w = httptest.NewRecorder()
 
@@ -123,55 +103,43 @@ func TestAuthorFind(t *testing.T) {
 	body, err := json.Marshal(createAuthor)
 	var req *http.Request
 	req, err = http.NewRequest("POST", "/api/authors", strings.NewReader(string(body)))
-	assert.NoError(t, err)
+	assert.NoError(suite.T(), err)
 	req.Header.Set("Content-Type", "application/json")
-	r.ServeHTTP(w, req)
+	suite.Router.ServeHTTP(w, req)
 
-	require.Equal(t, http.StatusCreated, w.Code)
+	require.Equal(suite.T(), http.StatusCreated, w.Code)
 	var author authors.Author
 	err = json.Unmarshal(w.Body.Bytes(), &author)
-	require.NoError(t, err)
+	require.NoError(suite.T(), err)
 
 	req, _ = http.NewRequest("GET", fmt.Sprintf("/api/authors/%d", author.ID), nil)
 	w = httptest.NewRecorder()
-	r.ServeHTTP(w, req)
+	suite.Router.ServeHTTP(w, req)
 
-	require.Equal(t, http.StatusOK, w.Code)
+	require.Equal(suite.T(), http.StatusOK, w.Code)
 
 	err = json.Unmarshal(w.Body.Bytes(), &author)
-	require.NoError(t, err)
-	assert.NotEmpty(t, author.CreatedAt)
-	assert.NotEmpty(t, author.UpdatedAt)
-	assert.False(t, author.DeletedAt.Valid)
-	assert.Equal(t, "First Name", author.FirstName)
-	assert.Equal(t, "Last Name", author.LastName)
-	assert.Equal(t, "Second Name", author.SecondName)
+	require.NoError(suite.T(), err)
+	assert.NotEmpty(suite.T(), author.CreatedAt)
+	assert.NotEmpty(suite.T(), author.UpdatedAt)
+	assert.False(suite.T(), author.DeletedAt.Valid)
+	assert.Equal(suite.T(), "First Name", author.FirstName)
+	assert.Equal(suite.T(), "Last Name", author.LastName)
+	assert.Equal(suite.T(), "Second Name", author.SecondName)
 }
 
-func TestAuthorFindNotFound(t *testing.T) {
-	gin.SetMode(gin.TestMode)
-
-	r := router.SetupRouter(database.CreateDb())
-
+func (suite *AuthorsTestSuite) TestAuthorFindNotFound() {
 	w := httptest.NewRecorder()
 
 	req, _ := http.NewRequest("GET", "/api/authors/100500", nil)
-	r.ServeHTTP(w, req)
+	suite.Router.ServeHTTP(w, req)
 
-	require.Equal(t, http.StatusNotFound, w.Code)
+	require.Equal(suite.T(), http.StatusNotFound, w.Code)
 	responseJson, _ := json.Marshal(router.MessageResponse{Message: "record not found"})
-	assert.JSONEq(t, string(responseJson), w.Body.String())
+	assert.JSONEq(suite.T(), string(responseJson), w.Body.String())
 }
 
-func TestAuthorDelete(t *testing.T) {
-	gin.SetMode(gin.TestMode)
-
-	db := database.CreateDb()
-	transaction := db.Begin()
-	defer transaction.Rollback()
-
-	r := router.SetupRouter(transaction)
-
+func (suite *AuthorsTestSuite) TestAuthorDelete() {
 	var w *httptest.ResponseRecorder
 	w = httptest.NewRecorder()
 
@@ -184,55 +152,43 @@ func TestAuthorDelete(t *testing.T) {
 	body, err := json.Marshal(createAuthor)
 	var req *http.Request
 	req, err = http.NewRequest("POST", "/api/authors", strings.NewReader(string(body)))
-	assert.NoError(t, err)
+	assert.NoError(suite.T(), err)
 	req.Header.Set("Content-Type", "application/json")
-	r.ServeHTTP(w, req)
+	suite.Router.ServeHTTP(w, req)
 
-	require.Equal(t, http.StatusCreated, w.Code)
+	require.Equal(suite.T(), http.StatusCreated, w.Code)
 
 	var author authors.Author
 	err = json.Unmarshal(w.Body.Bytes(), &author)
-	require.NoError(t, err)
+	require.NoError(suite.T(), err)
 
 	req, err = http.NewRequest("DELETE", fmt.Sprintf("/api/authors/%d", author.ID), nil)
-	assert.NoError(t, err)
+	assert.NoError(suite.T(), err)
 	w = httptest.NewRecorder()
-	r.ServeHTTP(w, req)
+	suite.Router.ServeHTTP(w, req)
 
-	require.Equal(t, http.StatusNoContent, w.Code)
+	require.Equal(suite.T(), http.StatusNoContent, w.Code)
 
 	req, err = http.NewRequest("GET", fmt.Sprintf("/api/authors/%d", author.ID), nil)
-	assert.NoError(t, err)
+	assert.NoError(suite.T(), err)
 	w = httptest.NewRecorder()
-	r.ServeHTTP(w, req)
+	suite.Router.ServeHTTP(w, req)
 
-	require.Equal(t, http.StatusNotFound, w.Code)
+	require.Equal(suite.T(), http.StatusNotFound, w.Code)
 }
 
-func TestAuthorDeleteNotFound(t *testing.T) {
-	gin.SetMode(gin.TestMode)
-
-	r := router.SetupRouter(database.CreateDb())
-
+func (suite *AuthorsTestSuite) TestAuthorDeleteNotFound() {
 	w := httptest.NewRecorder()
 
 	req, err := http.NewRequest("DELETE", "/api/authors/100500", nil)
-	assert.NoError(t, err)
+	assert.NoError(suite.T(), err)
 	w = httptest.NewRecorder()
-	r.ServeHTTP(w, req)
+	suite.Router.ServeHTTP(w, req)
 
-	require.Equal(t, http.StatusNotFound, w.Code)
+	require.Equal(suite.T(), http.StatusNotFound, w.Code)
 }
 
-func TestAuthorList(t *testing.T) {
-	gin.SetMode(gin.TestMode)
-
-	db := database.CreateDb()
-	transaction := db.Begin()
-	defer transaction.Rollback()
-
-	r := router.SetupRouter(transaction)
-
+func (suite *AuthorsTestSuite) TestAuthorList() {
 	w := httptest.NewRecorder()
 
 	users := []authors.Author{
@@ -242,10 +198,10 @@ func TestAuthorList(t *testing.T) {
 		{FirstName: "First Name 4", LastName: "Last Name 4"},
 		{FirstName: "First Name 5", LastName: "Last Name 5"},
 	}
-	result := transaction.Create(&users)
-	require.NoError(t, result.Error)
+	result := suite.DB.Create(&users)
+	require.NoError(suite.T(), result.Error)
 
-	tests := []struct {
+	testList := []struct {
 		name            string
 		requestBody     map[string]any
 		expectedAuthors []authors.Author
@@ -278,8 +234,8 @@ func TestAuthorList(t *testing.T) {
 		},
 	}
 
-	for _, tt := range tests {
-		t.Run(tt.name, func(t *testing.T) {
+	for _, tt := range testList {
+		suite.T().Run(tt.name, func(t *testing.T) {
 			endpoint, _ := url.Parse("/api/authors")
 			query := url.Values{}
 			for key, value := range tt.requestBody {
@@ -289,7 +245,7 @@ func TestAuthorList(t *testing.T) {
 
 			req, _ := http.NewRequest("GET", endpoint.String(), nil)
 			w = httptest.NewRecorder()
-			r.ServeHTTP(w, req)
+			suite.Router.ServeHTTP(w, req)
 
 			require.Equal(t, http.StatusOK, w.Code)
 
@@ -303,4 +259,8 @@ func TestAuthorList(t *testing.T) {
 			}
 		})
 	}
+}
+
+func TestSuite(t *testing.T) {
+	suite.Run(t, new(AuthorsTestSuite))
 }
