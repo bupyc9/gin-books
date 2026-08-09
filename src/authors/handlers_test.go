@@ -14,6 +14,7 @@ import (
 
 	"github.com/gin-gonic/gin"
 	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 )
 
 func TestAuthorCreate(t *testing.T) {
@@ -41,11 +42,11 @@ func TestAuthorCreate(t *testing.T) {
 	req.Header.Set("Content-Type", "application/json")
 	r.ServeHTTP(w, req)
 
-	assert.Equal(t, http.StatusCreated, w.Code)
+	require.Equal(t, http.StatusCreated, w.Code)
 
 	var author authors.Author
 	err = json.Unmarshal(w.Body.Bytes(), &author)
-	assert.NoError(t, err)
+	require.NoError(t, err)
 	assert.NotEmpty(t, author.CreatedAt)
 	assert.NotEmpty(t, author.UpdatedAt)
 	assert.False(t, author.DeletedAt.Valid)
@@ -94,7 +95,7 @@ func TestAuthorCreateValidation(t *testing.T) {
 			req.Header.Set("Content-Type", "application/json")
 			r.ServeHTTP(w, req)
 
-			assert.Equal(t, http.StatusUnprocessableEntity, w.Code)
+			require.Equal(t, http.StatusUnprocessableEntity, w.Code)
 			responseJson, _ := json.Marshal(tt.responseBody)
 			assert.JSONEq(t, string(responseJson), w.Body.String())
 		})
@@ -126,19 +127,19 @@ func TestAuthorFind(t *testing.T) {
 	req.Header.Set("Content-Type", "application/json")
 	r.ServeHTTP(w, req)
 
-	assert.Equal(t, http.StatusCreated, w.Code)
+	require.Equal(t, http.StatusCreated, w.Code)
 	var author authors.Author
 	err = json.Unmarshal(w.Body.Bytes(), &author)
-	assert.NoError(t, err)
+	require.NoError(t, err)
 
 	req, _ = http.NewRequest("GET", fmt.Sprintf("/api/authors/%d", author.ID), nil)
 	w = httptest.NewRecorder()
 	r.ServeHTTP(w, req)
 
-	assert.Equal(t, http.StatusOK, w.Code)
+	require.Equal(t, http.StatusOK, w.Code)
 
 	err = json.Unmarshal(w.Body.Bytes(), &author)
-	assert.NoError(t, err)
+	require.NoError(t, err)
 	assert.NotEmpty(t, author.CreatedAt)
 	assert.NotEmpty(t, author.UpdatedAt)
 	assert.False(t, author.DeletedAt.Valid)
@@ -157,7 +158,7 @@ func TestAuthorFindNotFound(t *testing.T) {
 	req, _ := http.NewRequest("GET", "/api/authors/100500", nil)
 	r.ServeHTTP(w, req)
 
-	assert.Equal(t, http.StatusNotFound, w.Code)
+	require.Equal(t, http.StatusNotFound, w.Code)
 	responseJson, _ := json.Marshal(router.MessageResponse{Message: "record not found"})
 	assert.JSONEq(t, string(responseJson), w.Body.String())
 }
@@ -187,25 +188,25 @@ func TestAuthorDelete(t *testing.T) {
 	req.Header.Set("Content-Type", "application/json")
 	r.ServeHTTP(w, req)
 
-	assert.Equal(t, http.StatusCreated, w.Code)
+	require.Equal(t, http.StatusCreated, w.Code)
 
 	var author authors.Author
 	err = json.Unmarshal(w.Body.Bytes(), &author)
-	assert.NoError(t, err)
+	require.NoError(t, err)
 
 	req, err = http.NewRequest("DELETE", fmt.Sprintf("/api/authors/%d", author.ID), nil)
 	assert.NoError(t, err)
 	w = httptest.NewRecorder()
 	r.ServeHTTP(w, req)
 
-	assert.Equal(t, http.StatusNoContent, w.Code)
+	require.Equal(t, http.StatusNoContent, w.Code)
 
 	req, err = http.NewRequest("GET", fmt.Sprintf("/api/authors/%d", author.ID), nil)
 	assert.NoError(t, err)
 	w = httptest.NewRecorder()
 	r.ServeHTTP(w, req)
 
-	assert.Equal(t, http.StatusNotFound, w.Code)
+	require.Equal(t, http.StatusNotFound, w.Code)
 }
 
 func TestAuthorDeleteNotFound(t *testing.T) {
@@ -220,7 +221,7 @@ func TestAuthorDeleteNotFound(t *testing.T) {
 	w = httptest.NewRecorder()
 	r.ServeHTTP(w, req)
 
-	assert.Equal(t, http.StatusNotFound, w.Code)
+	require.Equal(t, http.StatusNotFound, w.Code)
 }
 
 func TestAuthorList(t *testing.T) {
@@ -242,7 +243,7 @@ func TestAuthorList(t *testing.T) {
 		{FirstName: "First Name 5", LastName: "Last Name 5"},
 	}
 	result := transaction.Create(&users)
-	assert.NoError(t, result.Error)
+	require.NoError(t, result.Error)
 
 	tests := []struct {
 		name            string
@@ -290,13 +291,12 @@ func TestAuthorList(t *testing.T) {
 			w = httptest.NewRecorder()
 			r.ServeHTTP(w, req)
 
-			assert.Equal(t, http.StatusOK, w.Code)
+			require.Equal(t, http.StatusOK, w.Code)
 
 			var responseAuthors []authors.Author
 			err := json.Unmarshal(w.Body.Bytes(), &responseAuthors)
-			fmt.Println(string(w.Body.Bytes()))
-			assert.NoError(t, err)
-			assert.Equal(t, len(tt.expectedAuthors), len(responseAuthors))
+			require.NoError(t, err)
+			require.Equal(t, len(tt.expectedAuthors), len(responseAuthors))
 			for i, author := range tt.expectedAuthors {
 				assert.Equal(t, author.FirstName, responseAuthors[i].FirstName, fmt.Sprintf("Author #%d", i))
 				assert.Equal(t, author.LastName, responseAuthors[i].LastName, fmt.Sprintf("Author #%d", i))
