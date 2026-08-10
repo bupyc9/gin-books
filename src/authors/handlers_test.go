@@ -22,20 +22,16 @@ type AuthorsTestSuite struct {
 }
 
 func (suite *AuthorsTestSuite) TestAuthorCreate() {
-	var w *httptest.ResponseRecorder
-	w = httptest.NewRecorder()
-
 	createAuthor := authors.CreateAuthor{
 		FirstName:  "First Name",
 		LastName:   "Last Name",
 		SecondName: "Second Name",
 	}
-	var err error
 	body, err := json.Marshal(createAuthor)
-	var req *http.Request
-	req, err = http.NewRequest("POST", "/api/authors", strings.NewReader(string(body)))
+	req, err := http.NewRequest("POST", "/api/authors", strings.NewReader(string(body)))
 	assert.NoError(suite.T(), err)
 	req.Header.Set("Content-Type", "application/json")
+	w := httptest.NewRecorder()
 	suite.Router.ServeHTTP(w, req)
 
 	require.Equal(suite.T(), http.StatusCreated, w.Code)
@@ -58,8 +54,6 @@ func (suite *AuthorsTestSuite) TestAuthorCreate() {
 }
 
 func (suite *AuthorsTestSuite) TestAuthorCreateValidation() {
-	w := httptest.NewRecorder()
-
 	testList := []struct {
 		name         string
 		requestBody  map[string]any
@@ -80,6 +74,7 @@ func (suite *AuthorsTestSuite) TestAuthorCreateValidation() {
 			body, _ := json.Marshal(tt.requestBody)
 			req, _ := http.NewRequest("POST", "/api/authors", strings.NewReader(string(body)))
 			req.Header.Set("Content-Type", "application/json")
+			w := httptest.NewRecorder()
 			suite.Router.ServeHTTP(w, req)
 
 			require.Equal(t, http.StatusUnprocessableEntity, w.Code)
@@ -90,23 +85,20 @@ func (suite *AuthorsTestSuite) TestAuthorCreateValidation() {
 }
 
 func (suite *AuthorsTestSuite) TestAuthorFind() {
-	var w *httptest.ResponseRecorder
-	w = httptest.NewRecorder()
-
 	createAuthor := authors.CreateAuthor{
 		FirstName:  "First Name",
 		LastName:   "Last Name",
 		SecondName: "Second Name",
 	}
-	var err error
 	body, err := json.Marshal(createAuthor)
-	var req *http.Request
-	req, err = http.NewRequest("POST", "/api/authors", strings.NewReader(string(body)))
+	req, err := http.NewRequest("POST", "/api/authors", strings.NewReader(string(body)))
 	assert.NoError(suite.T(), err)
 	req.Header.Set("Content-Type", "application/json")
+	w := httptest.NewRecorder()
 	suite.Router.ServeHTTP(w, req)
 
 	require.Equal(suite.T(), http.StatusCreated, w.Code)
+
 	var author authors.Author
 	err = json.Unmarshal(w.Body.Bytes(), &author)
 	require.NoError(suite.T(), err)
@@ -127,9 +119,8 @@ func (suite *AuthorsTestSuite) TestAuthorFind() {
 }
 
 func (suite *AuthorsTestSuite) TestAuthorFindNotFound() {
-	w := httptest.NewRecorder()
-
 	req, _ := http.NewRequest("GET", "/api/authors/100500", nil)
+	w := httptest.NewRecorder()
 	suite.Router.ServeHTTP(w, req)
 
 	require.Equal(suite.T(), http.StatusNotFound, w.Code)
@@ -138,20 +129,16 @@ func (suite *AuthorsTestSuite) TestAuthorFindNotFound() {
 }
 
 func (suite *AuthorsTestSuite) TestAuthorDelete() {
-	var w *httptest.ResponseRecorder
-	w = httptest.NewRecorder()
-
 	createAuthor := authors.CreateAuthor{
 		FirstName:  "First Name",
 		LastName:   "Last Name",
 		SecondName: "Second Name",
 	}
-	var err error
 	body, err := json.Marshal(createAuthor)
-	var req *http.Request
-	req, err = http.NewRequest("POST", "/api/authors", strings.NewReader(string(body)))
+	req, err := http.NewRequest("POST", "/api/authors", strings.NewReader(string(body)))
 	assert.NoError(suite.T(), err)
 	req.Header.Set("Content-Type", "application/json")
+	w := httptest.NewRecorder()
 	suite.Router.ServeHTTP(w, req)
 
 	require.Equal(suite.T(), http.StatusCreated, w.Code)
@@ -176,19 +163,15 @@ func (suite *AuthorsTestSuite) TestAuthorDelete() {
 }
 
 func (suite *AuthorsTestSuite) TestAuthorDeleteNotFound() {
-	w := httptest.NewRecorder()
-
 	req, err := http.NewRequest("DELETE", "/api/authors/100500", nil)
 	assert.NoError(suite.T(), err)
-	w = httptest.NewRecorder()
+	w := httptest.NewRecorder()
 	suite.Router.ServeHTTP(w, req)
 
 	require.Equal(suite.T(), http.StatusNotFound, w.Code)
 }
 
 func (suite *AuthorsTestSuite) TestAuthorList() {
-	w := httptest.NewRecorder()
-
 	users := []authors.Author{
 		{FirstName: "First Name 1", LastName: "Last Name 1"},
 		{FirstName: "First Name 2", LastName: "Last Name 2"},
@@ -242,7 +225,7 @@ func (suite *AuthorsTestSuite) TestAuthorList() {
 			endpoint.RawQuery = query.Encode()
 
 			req, _ := http.NewRequest("GET", endpoint.String(), nil)
-			w = httptest.NewRecorder()
+			w := httptest.NewRecorder()
 			suite.Router.ServeHTTP(w, req)
 
 			require.Equal(t, http.StatusOK, w.Code)
