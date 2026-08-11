@@ -4,7 +4,9 @@ import (
 	"books/authors"
 	"log"
 
+	"encoding/json"
 	"errors"
+	"fmt"
 	"net/http"
 
 	"github.com/gin-gonic/gin"
@@ -45,20 +47,17 @@ func errorHandler() gin.HandlerFunc {
 		err := context.Errors.Last().Err
 
 		var validateErrs validator.ValidationErrors
-		if errors.As(err, &validateErrs) {
-			log.Println("validation errors:", validateErrs)
+		var unmarshalTypeError *json.UnmarshalTypeError
+		switch {
+		case errors.As(err, &validateErrs):
 			validationError(validateErrs, context)
-
-			return
-		}
-
-		if errors.Is(err, gorm.ErrRecordNotFound) {
+		case errors.As(err, &unmarshalTypeError):
+			unMarshalError(unmarshalTypeError, context)
+		case errors.Is(err, gorm.ErrRecordNotFound):
 			recordNotFound(err, context)
-
-			return
+		default:
+			context.JSON(http.StatusInternalServerError, MessageResponse{Message: err.Error()})
 		}
-
-		context.JSON(http.StatusInternalServerError, MessageResponse{Message: err.Error()})
 	}
 }
 
@@ -75,4 +74,10 @@ func recordNotFound(err error, context *gin.Context) {
 	response := MessageResponse{Message: err.Error()}
 
 	context.JSON(http.StatusNotFound, response)
+}
+
+func unMarshalError(unmarshalError *json.UnmarshalTypeError, context *gin.Context) {
+	response := ValidationResponse{Message: "Validation Error"}
+	response.Errors = map[string]string{unmarshalError.Field: fmt.Sprintf("The expected type is \"%s\"", unmarshalError.Type.Name())}
+	context.JSON(http.StatusUnprocessableEntity, response)
 }

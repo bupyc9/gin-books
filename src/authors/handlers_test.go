@@ -67,6 +67,27 @@ func (suite *AuthorsTestSuite) TestAuthorCreateValidation() {
 				"LastName":  "required",
 			}},
 		},
+		{
+			"invalid type firstName",
+			map[string]any{"firstName": 1},
+			router.ValidationResponse{Message: "Validation Error", Errors: map[string]string{
+				"firstName": "The expected type is \"string\"",
+			}},
+		},
+		{
+			"invalid type lastName",
+			map[string]any{"lastName": 1},
+			router.ValidationResponse{Message: "Validation Error", Errors: map[string]string{
+				"lastName": "The expected type is \"string\"",
+			}},
+		},
+		{
+			"invalid type secondName",
+			map[string]any{"secondName": 1},
+			router.ValidationResponse{Message: "Validation Error", Errors: map[string]string{
+				"secondName": "The expected type is \"string\"",
+			}},
+		},
 	}
 
 	for _, tt := range testList {
