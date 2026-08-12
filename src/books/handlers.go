@@ -25,6 +25,7 @@ func (handler handler) Route(router *gin.RouterGroup) {
 	authors.POST("", handler.create)
 	authors.GET("/:id", handler.find)
 	authors.DELETE("/:id", handler.delete)
+	authors.GET("", handler.list)
 }
 
 func (handler handler) create(context *gin.Context) {
@@ -87,4 +88,27 @@ func (handler handler) delete(context *gin.Context) {
 	}
 
 	context.JSON(http.StatusOK, book)
+}
+
+func (handler handler) list(context *gin.Context) {
+	limit, _ := strconv.Atoi(context.DefaultQuery("count", "40"))
+	if limit <= 0 {
+		limit = 40
+	}
+	page, _ := strconv.Atoi(context.DefaultQuery("page", "1"))
+	if page <= 0 {
+		page = 1
+	}
+
+	offset := (page - 1) * limit
+
+	var books []Book
+	result := handler.DB.Limit(limit).Offset(offset).Preload("Author").Find(&books)
+	if result.Error != nil {
+		context.Error(result.Error)
+
+		return
+	}
+
+	context.JSON(http.StatusOK, books)
 }

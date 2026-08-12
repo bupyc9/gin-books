@@ -9,10 +9,14 @@ import (
 	"fmt"
 	"net/http"
 	"net/http/httptest"
+	"net/url"
 	"strings"
 	"testing"
 
+	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 	"github.com/stretchr/testify/suite"
+	"gorm.io/gorm"
 )
 
 type BooksTestSuite struct {
@@ -192,6 +196,97 @@ func (suite *BooksTestSuite) TestBookDeleteNotFound() {
 	suite.Require().Equal(http.StatusNotFound, w.Code)
 	responseJson, _ := json.Marshal(router.MessageResponse{Message: "record not found"})
 	suite.Assert().JSONEq(string(responseJson), w.Body.String())
+}
+
+func (suite *BooksTestSuite) TestBookList() {
+	err := suite.DB.Transaction(func(tx *gorm.DB) error {
+		var author = authors.Author{FirstName: "FirstName", LastName: "LastName"}
+		result := tx.Create(&author)
+		if result.Error != nil {
+			return result.Error
+		}
+
+		items := []books.Book{
+			{Name: "Book 1", Pages: 301, Year: 2011, Author: author},
+			{Name: "Book 2", Pages: 302, Year: 2012, Author: author},
+			{Name: "Book 3", Pages: 303, Year: 2013, Author: author},
+			{Name: "Book 4", Pages: 304, Year: 2014, Author: author},
+			{Name: "Book 5", Pages: 305, Year: 2015, Author: author},
+		}
+		result = tx.Create(&items)
+		if result.Error != nil {
+			return result.Error
+		}
+
+		return nil
+	})
+
+	require.NoError(suite.T(), err)
+
+	testList := []struct {
+		name            string
+		requestBody     map[string]any
+		expectedAuthors []books.Book
+	}{
+		{
+			"empty",
+			map[string]any{},
+			[]books.Book{
+				{Name: "Book 1", Pages: 301, Year: 2011},
+				{Name: "Book 2", Pages: 302, Year: 2012},
+				{Name: "Book 3", Pages: 303, Year: 2013},
+				{Name: "Book 4", Pages: 304, Year: 2014},
+				{Name: "Book 5", Pages: 305, Year: 2015},
+			},
+		},
+		{
+			"count 1",
+			map[string]any{"count": "1"},
+			[]books.Book{
+				{Name: "Book 1", Pages: 301, Year: 2011},
+			},
+		},
+		{
+			"page 2 count 2",
+			map[string]any{"page": "2", "count": "2"},
+			[]books.Book{
+				{Name: "Book 3", Pages: 303, Year: 2013},
+				{Name: "Book 4", Pages: 304, Year: 2014},
+			},
+		},
+	}
+
+	for _, tt := range testList {
+		suite.T().Run(tt.name, func(t *testing.T) {
+			endpoint, _ := url.Parse("/api/books")
+			query := url.Values{}
+			for key, value := range tt.requestBody {
+				query.Add(key, value.(string))
+			}
+			endpoint.RawQuery = query.Encode()
+
+			req, _ := http.NewRequest("GET", endpoint.String(), nil)
+			w := httptest.NewRecorder()
+			suite.Router.ServeHTTP(w, req)
+
+			require.Equal(t, http.StatusOK, w.Code)
+
+			var responseBooks []books.Book
+			err := json.Unmarshal(w.Body.Bytes(), &responseBooks)
+			require.NoError(t, err)
+			require.Equal(t, len(tt.expectedAuthors), len(responseBooks))
+			for i, book := range tt.expectedAuthors {
+				message := fmt.Sprintf("Book #%d", i)
+
+				assert.Equal(t, book.Name, responseBooks[i].Name, message)
+				assert.Equal(t, book.Year, responseBooks[i].Year, message)
+				assert.Equal(t, book.Pages, responseBooks[i].Pages, message)
+				assert.Equal(t, "FirstName", responseBooks[i].Author.FirstName, message)
+				assert.Equal(t, "LastName", responseBooks[i].Author.LastName, message)
+				assert.Equal(t, "", responseBooks[i].Author.SecondName, message)
+			}
+		})
+	}
 }
 
 func TestSuite(t *testing.T) {
