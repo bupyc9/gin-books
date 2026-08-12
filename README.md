@@ -11,3 +11,5 @@ REST API сервис книг и авторов, написан на golang.
 * RESTful API:
   * CRUD для author
   * CRUD для book
+
+Команда для запуска тестов `DB_HOST=database-test go test ./...`. Выполнять в докер контейнере `backend`. 
