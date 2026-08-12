@@ -13,8 +13,6 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/stretchr/testify/assert"
-	"github.com/stretchr/testify/require"
 	"github.com/stretchr/testify/suite"
 	"gorm.io/gorm"
 )
@@ -221,7 +219,7 @@ func (suite *BooksTestSuite) TestBookList() {
 		return nil
 	})
 
-	require.NoError(suite.T(), err)
+	suite.Require().NoError(err)
 
 	testList := []struct {
 		name            string
@@ -269,21 +267,21 @@ func (suite *BooksTestSuite) TestBookList() {
 			w := httptest.NewRecorder()
 			suite.Router.ServeHTTP(w, req)
 
-			require.Equal(t, http.StatusOK, w.Code)
+			suite.Require().Equal(http.StatusOK, w.Code)
 
 			var responseBooks []books.Book
 			err := json.Unmarshal(w.Body.Bytes(), &responseBooks)
-			require.NoError(t, err)
-			require.Equal(t, len(tt.expectedAuthors), len(responseBooks))
+			suite.Require().NoError(err)
+			suite.Require().Equal(len(tt.expectedAuthors), len(responseBooks))
 			for i, book := range tt.expectedAuthors {
 				message := fmt.Sprintf("Book #%d", i)
 
-				assert.Equal(t, book.Name, responseBooks[i].Name, message)
-				assert.Equal(t, book.Year, responseBooks[i].Year, message)
-				assert.Equal(t, book.Pages, responseBooks[i].Pages, message)
-				assert.Equal(t, "FirstName", responseBooks[i].Author.FirstName, message)
-				assert.Equal(t, "LastName", responseBooks[i].Author.LastName, message)
-				assert.Equal(t, "", responseBooks[i].Author.SecondName, message)
+				suite.Assert().Equal(book.Name, responseBooks[i].Name, message)
+				suite.Assert().Equal(book.Year, responseBooks[i].Year, message)
+				suite.Assert().Equal(book.Pages, responseBooks[i].Pages, message)
+				suite.Assert().Equal("FirstName", responseBooks[i].Author.FirstName, message)
+				suite.Assert().Equal("LastName", responseBooks[i].Author.LastName, message)
+				suite.Assert().Equal("", responseBooks[i].Author.SecondName, message)
 			}
 		})
 	}

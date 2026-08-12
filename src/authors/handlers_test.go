@@ -12,8 +12,6 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/stretchr/testify/assert"
-	"github.com/stretchr/testify/require"
 	"github.com/stretchr/testify/suite"
 )
 
@@ -29,28 +27,28 @@ func (suite *AuthorsTestSuite) TestAuthorCreate() {
 	}
 	body, err := json.Marshal(createAuthor)
 	req, err := http.NewRequest("POST", "/api/authors", strings.NewReader(string(body)))
-	assert.NoError(suite.T(), err)
+	suite.Assert().NoError(err)
 	req.Header.Set("Content-Type", "application/json")
 	w := httptest.NewRecorder()
 	suite.Router.ServeHTTP(w, req)
 
-	require.Equal(suite.T(), http.StatusCreated, w.Code)
+	suite.Require().Equal(http.StatusCreated, w.Code)
 
 	var author authors.Author
 	err = json.Unmarshal(w.Body.Bytes(), &author)
-	require.NoError(suite.T(), err)
-	assert.NotEmpty(suite.T(), author.CreatedAt)
-	assert.NotEmpty(suite.T(), author.UpdatedAt)
-	assert.Equal(suite.T(), "First Name", author.FirstName)
-	assert.Equal(suite.T(), "Last Name", author.LastName)
-	assert.Equal(suite.T(), "Second Name", author.SecondName)
+	suite.Require().NoError(err)
+	suite.Assert().NotEmpty(author.CreatedAt)
+	suite.Assert().NotEmpty(author.UpdatedAt)
+	suite.Assert().Equal("First Name", author.FirstName)
+	suite.Assert().Equal("Last Name", author.LastName)
+	suite.Assert().Equal("Second Name", author.SecondName)
 
 	req, err = http.NewRequest("GET", fmt.Sprintf("/api/authors/%d", author.ID), nil)
-	assert.NoError(suite.T(), err)
+	suite.Assert().NoError(err)
 	w = httptest.NewRecorder()
 	suite.Router.ServeHTTP(w, req)
 
-	assert.Equal(suite.T(), http.StatusOK, w.Code)
+	suite.Assert().Equal(http.StatusOK, w.Code)
 }
 
 func (suite *AuthorsTestSuite) TestAuthorCreateValidation() {
@@ -98,9 +96,9 @@ func (suite *AuthorsTestSuite) TestAuthorCreateValidation() {
 			w := httptest.NewRecorder()
 			suite.Router.ServeHTTP(w, req)
 
-			require.Equal(t, http.StatusUnprocessableEntity, w.Code)
+			suite.Require().Equal(http.StatusUnprocessableEntity, w.Code)
 			responseJson, _ := json.Marshal(tt.responseBody)
-			assert.JSONEq(t, string(responseJson), w.Body.String())
+			suite.Assert().JSONEq(string(responseJson), w.Body.String())
 		})
 	}
 }
@@ -113,30 +111,30 @@ func (suite *AuthorsTestSuite) TestAuthorFind() {
 	}
 	body, err := json.Marshal(createAuthor)
 	req, err := http.NewRequest("POST", "/api/authors", strings.NewReader(string(body)))
-	assert.NoError(suite.T(), err)
+	suite.Assert().NoError(err)
 	req.Header.Set("Content-Type", "application/json")
 	w := httptest.NewRecorder()
 	suite.Router.ServeHTTP(w, req)
 
-	require.Equal(suite.T(), http.StatusCreated, w.Code)
+	suite.Require().Equal(http.StatusCreated, w.Code)
 
 	var author authors.Author
 	err = json.Unmarshal(w.Body.Bytes(), &author)
-	require.NoError(suite.T(), err)
+	suite.Require().NoError(err)
 
 	req, _ = http.NewRequest("GET", fmt.Sprintf("/api/authors/%d", author.ID), nil)
 	w = httptest.NewRecorder()
 	suite.Router.ServeHTTP(w, req)
 
-	require.Equal(suite.T(), http.StatusOK, w.Code)
+	suite.Require().Equal(http.StatusOK, w.Code)
 
 	err = json.Unmarshal(w.Body.Bytes(), &author)
-	require.NoError(suite.T(), err)
-	assert.NotEmpty(suite.T(), author.CreatedAt)
-	assert.NotEmpty(suite.T(), author.UpdatedAt)
-	assert.Equal(suite.T(), "First Name", author.FirstName)
-	assert.Equal(suite.T(), "Last Name", author.LastName)
-	assert.Equal(suite.T(), "Second Name", author.SecondName)
+	suite.Require().NoError(err)
+	suite.Assert().NotEmpty(author.CreatedAt)
+	suite.Assert().NotEmpty(author.UpdatedAt)
+	suite.Assert().Equal("First Name", author.FirstName)
+	suite.Assert().Equal("Last Name", author.LastName)
+	suite.Assert().Equal("Second Name", author.SecondName)
 }
 
 func (suite *AuthorsTestSuite) TestAuthorFindNotFound() {
@@ -144,9 +142,9 @@ func (suite *AuthorsTestSuite) TestAuthorFindNotFound() {
 	w := httptest.NewRecorder()
 	suite.Router.ServeHTTP(w, req)
 
-	require.Equal(suite.T(), http.StatusNotFound, w.Code)
+	suite.Require().Equal(http.StatusNotFound, w.Code)
 	responseJson, _ := json.Marshal(router.MessageResponse{Message: "record not found"})
-	assert.JSONEq(suite.T(), string(responseJson), w.Body.String())
+	suite.Assert().JSONEq(string(responseJson), w.Body.String())
 }
 
 func (suite *AuthorsTestSuite) TestAuthorDelete() {
@@ -157,39 +155,39 @@ func (suite *AuthorsTestSuite) TestAuthorDelete() {
 	}
 	body, err := json.Marshal(createAuthor)
 	req, err := http.NewRequest("POST", "/api/authors", strings.NewReader(string(body)))
-	assert.NoError(suite.T(), err)
+	suite.Assert().NoError(err)
 	req.Header.Set("Content-Type", "application/json")
 	w := httptest.NewRecorder()
 	suite.Router.ServeHTTP(w, req)
 
-	require.Equal(suite.T(), http.StatusCreated, w.Code)
+	suite.Require().Equal(http.StatusCreated, w.Code)
 
 	var author authors.Author
 	err = json.Unmarshal(w.Body.Bytes(), &author)
-	require.NoError(suite.T(), err)
+	suite.Require().NoError(err)
 
 	req, err = http.NewRequest("DELETE", fmt.Sprintf("/api/authors/%d", author.ID), nil)
-	assert.NoError(suite.T(), err)
+	suite.Assert().NoError(err)
 	w = httptest.NewRecorder()
 	suite.Router.ServeHTTP(w, req)
 
-	require.Equal(suite.T(), http.StatusNoContent, w.Code)
+	suite.Require().Equal(http.StatusNoContent, w.Code)
 
 	req, err = http.NewRequest("GET", fmt.Sprintf("/api/authors/%d", author.ID), nil)
-	assert.NoError(suite.T(), err)
+	suite.Assert().NoError(err)
 	w = httptest.NewRecorder()
 	suite.Router.ServeHTTP(w, req)
 
-	require.Equal(suite.T(), http.StatusNotFound, w.Code)
+	suite.Require().Equal(http.StatusNotFound, w.Code)
 }
 
 func (suite *AuthorsTestSuite) TestAuthorDeleteNotFound() {
 	req, err := http.NewRequest("DELETE", "/api/authors/100500", nil)
-	assert.NoError(suite.T(), err)
+	suite.Assert().NoError(err)
 	w := httptest.NewRecorder()
 	suite.Router.ServeHTTP(w, req)
 
-	require.Equal(suite.T(), http.StatusNotFound, w.Code)
+	suite.Require().Equal(http.StatusNotFound, w.Code)
 }
 
 func (suite *AuthorsTestSuite) TestAuthorList() {
@@ -201,7 +199,7 @@ func (suite *AuthorsTestSuite) TestAuthorList() {
 		{FirstName: "First Name 5", LastName: "Last Name 5"},
 	}
 	result := suite.DB.Create(&users)
-	require.NoError(suite.T(), result.Error)
+	suite.Require().NoError(result.Error)
 
 	testList := []struct {
 		name            string
@@ -249,15 +247,15 @@ func (suite *AuthorsTestSuite) TestAuthorList() {
 			w := httptest.NewRecorder()
 			suite.Router.ServeHTTP(w, req)
 
-			require.Equal(t, http.StatusOK, w.Code)
+			suite.Require().Equal(http.StatusOK, w.Code)
 
 			var responseAuthors []authors.Author
 			err := json.Unmarshal(w.Body.Bytes(), &responseAuthors)
-			require.NoError(t, err)
-			require.Equal(t, len(tt.expectedAuthors), len(responseAuthors))
+			suite.Require().NoError(err)
+			suite.Require().Equal(len(tt.expectedAuthors), len(responseAuthors))
 			for i, author := range tt.expectedAuthors {
-				assert.Equal(t, author.FirstName, responseAuthors[i].FirstName, fmt.Sprintf("Author #%d", i))
-				assert.Equal(t, author.LastName, responseAuthors[i].LastName, fmt.Sprintf("Author #%d", i))
+				suite.Assert().Equal(author.FirstName, responseAuthors[i].FirstName, fmt.Sprintf("Author #%d", i))
+				suite.Assert().Equal(author.LastName, responseAuthors[i].LastName, fmt.Sprintf("Author #%d", i))
 			}
 		})
 	}
