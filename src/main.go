@@ -3,6 +3,7 @@ package main
 import (
 	"books/database"
 	"books/router"
+	"books/validator"
 
 	"log"
 )
@@ -11,6 +12,7 @@ func main() {
 	db := database.CreateDb()
 
 	r := router.SetupRouter(db)
+	validator.Init(db)
 
 	// Start server on port 8080 (default)
 	if err := r.Run(); err != nil {

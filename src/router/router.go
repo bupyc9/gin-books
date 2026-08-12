@@ -2,7 +2,7 @@ package router
 
 import (
 	"books/authors"
-	"log"
+	"books/books"
 
 	"encoding/json"
 	"errors"
@@ -35,6 +35,7 @@ func api(db *gorm.DB, router *gin.Engine) {
 	api := router.Group("/api")
 
 	authors.Init(db, api)
+	books.Init(db, api)
 }
 
 func errorHandler() gin.HandlerFunc {
@@ -64,8 +65,19 @@ func errorHandler() gin.HandlerFunc {
 func validationError(validateErrs validator.ValidationErrors, context *gin.Context) {
 	response := ValidationResponse{Message: "Validation Error"}
 	response.Errors = make(map[string]string)
+
+	mapValidations := map[string]string{
+		"required": "required",
+		"author":   "not_found",
+	}
+
 	for _, e := range validateErrs {
-		response.Errors[e.Field()] = e.Tag()
+		value, ok := mapValidations[e.Tag()]
+		if !ok {
+			value = "unknown"
+		}
+
+		response.Errors[e.Field()] = value
 	}
 	context.JSON(http.StatusUnprocessableEntity, response)
 }

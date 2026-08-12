@@ -2,6 +2,7 @@ package database
 
 import (
 	"books/authors"
+	"books/books"
 	"books/config/database"
 
 	"gorm.io/driver/postgres"
@@ -27,4 +28,5 @@ func CreateDb() *gorm.DB {
 
 func MigrateDb(db *gorm.DB) {
 	db.AutoMigrate(&authors.Author{})
+	db.AutoMigrate(&books.Book{})
 }

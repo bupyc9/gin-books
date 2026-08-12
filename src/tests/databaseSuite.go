@@ -3,6 +3,7 @@ package tests
 import (
 	"books/database"
 	"books/router"
+	"books/validator"
 
 	"github.com/gin-gonic/gin"
 	"github.com/stretchr/testify/suite"
@@ -20,6 +21,7 @@ func (suite *DatabaseTestSuite) SetupTest() {
 
 	suite.DB = database.CreateDb().Begin()
 	suite.Router = router.SetupRouter(suite.DB)
+	validator.Init(suite.DB)
 }
 
 func (suite *DatabaseTestSuite) TearDownTest() {
