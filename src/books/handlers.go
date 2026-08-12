@@ -24,6 +24,7 @@ func (handler handler) Route(router *gin.RouterGroup) {
 
 	authors.POST("", handler.create)
 	authors.GET("/:id", handler.find)
+	authors.DELETE("/:id", handler.delete)
 }
 
 func (handler handler) create(context *gin.Context) {
@@ -58,6 +59,27 @@ func (handler handler) find(context *gin.Context) {
 
 	var book Book
 	result := handler.DB.Preload("Author").First(&book, id)
+	if result.Error != nil {
+		context.Error(result.Error)
+
+		return
+	}
+
+	context.JSON(http.StatusOK, book)
+}
+
+func (handler handler) delete(context *gin.Context) {
+	id, _ := strconv.Atoi(context.Param("id"))
+
+	var book Book
+	result := handler.DB.First(&book, id)
+	if result.Error != nil {
+		context.Error(result.Error)
+
+		return
+	}
+
+	result = handler.DB.Delete(&book)
 	if result.Error != nil {
 		context.Error(result.Error)
 

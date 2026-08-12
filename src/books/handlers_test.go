@@ -161,6 +161,39 @@ func (suite *BooksTestSuite) TestBookFindNotFound() {
 	suite.Assert().JSONEq(string(responseJson), w.Body.String())
 }
 
+func (suite *BooksTestSuite) TestBookDelete() {
+	book := books.Book{
+		Name:   "Test Book",
+		Pages:  300,
+		Year:   2010,
+		Author: authors.Author{FirstName: "FirstName", LastName: "LastName"},
+	}
+	result := suite.DB.Create(&book)
+	suite.Require().NoError(result.Error)
+
+	req, _ := http.NewRequest("DELETE", fmt.Sprintf("/api/books/%d", book.ID), nil)
+	w := httptest.NewRecorder()
+	suite.Router.ServeHTTP(w, req)
+
+	suite.Require().Equal(http.StatusOK, w.Code)
+
+	req, _ = http.NewRequest("GET", fmt.Sprintf("/api/books/%d", book.ID), nil)
+	w = httptest.NewRecorder()
+	suite.Router.ServeHTTP(w, req)
+
+	suite.Require().Equal(http.StatusNotFound, w.Code)
+}
+
+func (suite *BooksTestSuite) TestBookDeleteNotFound() {
+	req, _ := http.NewRequest("DELETE", "/api/books/100500", nil)
+	w := httptest.NewRecorder()
+	suite.Router.ServeHTTP(w, req)
+
+	suite.Require().Equal(http.StatusNotFound, w.Code)
+	responseJson, _ := json.Marshal(router.MessageResponse{Message: "record not found"})
+	suite.Assert().JSONEq(string(responseJson), w.Body.String())
+}
+
 func TestSuite(t *testing.T) {
 	suite.Run(t, new(BooksTestSuite))
 }

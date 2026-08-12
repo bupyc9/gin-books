@@ -70,7 +70,12 @@ func (handler handler) delete(context *gin.Context) {
 		return
 	}
 
-	handler.DB.Delete(&author)
+	result = handler.DB.Delete(&author)
+	if result.Error != nil {
+		context.Error(result.Error)
+
+		return
+	}
 
 	context.Status(http.StatusNoContent)
 }
