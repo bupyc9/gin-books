@@ -17,7 +17,7 @@ import (
 )
 
 type BooksTestSuite struct {
-	tests.DatabaseTestSuite
+	tests.TestSuite
 }
 
 func (suite *BooksTestSuite) TestBookCreate() {

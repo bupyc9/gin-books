@@ -10,13 +10,13 @@ import (
 	"gorm.io/gorm"
 )
 
-type DatabaseTestSuite struct {
+type TestSuite struct {
 	suite.Suite
 	DB     *gorm.DB
 	Router *gin.Engine
 }
 
-func (suite *DatabaseTestSuite) SetupTest() {
+func (suite *TestSuite) SetupTest() {
 	gin.SetMode(gin.TestMode)
 
 	suite.DB = database.CreateDb().Begin()
@@ -24,7 +24,7 @@ func (suite *DatabaseTestSuite) SetupTest() {
 	validator.Init(suite.DB)
 }
 
-func (suite *DatabaseTestSuite) TearDownTest() {
+func (suite *TestSuite) TearDownTest() {
 	if suite.DB != nil {
 		suite.DB.Rollback()
 	}

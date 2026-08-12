@@ -18,7 +18,7 @@ import (
 )
 
 type AuthorsTestSuite struct {
-	tests.DatabaseTestSuite
+	tests.TestSuite
 }
 
 func (suite *AuthorsTestSuite) TestAuthorCreate() {
