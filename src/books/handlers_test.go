@@ -6,13 +6,12 @@ import (
 	"books/router"
 	"books/tests"
 	"encoding/json"
+	"fmt"
 	"net/http"
 	"net/http/httptest"
 	"strings"
 	"testing"
 
-	"github.com/stretchr/testify/assert"
-	"github.com/stretchr/testify/require"
 	"github.com/stretchr/testify/suite"
 )
 
@@ -23,7 +22,7 @@ type BooksTestSuite struct {
 func (suite *BooksTestSuite) TestBookCreate() {
 	author := authors.Author{FirstName: "FirstName", LastName: "LastName"}
 	result := suite.DB.Create(&author)
-	require.NoError(suite.T(), result.Error)
+	suite.Require().NoError(result.Error)
 
 	createBooks := books.CreateBookRequest{
 		AuthorID: author.ID,
@@ -35,23 +34,23 @@ func (suite *BooksTestSuite) TestBookCreate() {
 	body, err := json.Marshal(createBooks)
 	var req *http.Request
 	req, err = http.NewRequest("POST", "/api/books", strings.NewReader(string(body)))
-	assert.NoError(suite.T(), err)
+	suite.Assert().NoError(err)
 	req.Header.Set("Content-Type", "application/json")
 	w := httptest.NewRecorder()
 	suite.Router.ServeHTTP(w, req)
 
-	require.Equal(suite.T(), http.StatusCreated, w.Code)
+	suite.Require().Equal(http.StatusCreated, w.Code)
 
 	var book books.Book
 	err = json.Unmarshal(w.Body.Bytes(), &book)
-	require.NoError(suite.T(), err)
-	assert.NotEmpty(suite.T(), book.CreatedAt)
-	assert.NotEmpty(suite.T(), book.UpdatedAt)
-	assert.Equal(suite.T(), "Test Book", book.Name)
-	assert.Equal(suite.T(), uint(300), book.Pages)
-	assert.Equal(suite.T(), uint(2010), book.Year)
-	assert.Equal(suite.T(), "FirstName", book.Author.FirstName)
-	assert.Equal(suite.T(), "LastName", book.Author.LastName)
+	suite.Require().NoError(err)
+	suite.Assert().NotEmpty(book.CreatedAt)
+	suite.Assert().NotEmpty(book.UpdatedAt)
+	suite.Assert().Equal("Test Book", book.Name)
+	suite.Assert().Equal(uint(300), book.Pages)
+	suite.Assert().Equal(uint(2010), book.Year)
+	suite.Assert().Equal("FirstName", book.Author.FirstName)
+	suite.Assert().Equal("LastName", book.Author.LastName)
 }
 
 func (suite *BooksTestSuite) TestBookCreateValidation() {
@@ -115,12 +114,51 @@ func (suite *BooksTestSuite) TestBookCreateValidation() {
 			w := httptest.NewRecorder()
 			suite.Router.ServeHTTP(w, req)
 
-			require.Equal(t, http.StatusUnprocessableEntity, w.Code)
+			suite.Require().Equal(http.StatusUnprocessableEntity, w.Code)
 
 			responseJson, _ := json.Marshal(tt.responseBody)
-			assert.JSONEq(t, string(responseJson), w.Body.String())
+			suite.Assert().JSONEq(string(responseJson), w.Body.String())
 		})
 	}
+}
+
+func (suite *BooksTestSuite) TestBookFind() {
+	book := books.Book{
+		Name:   "Test Book",
+		Pages:  300,
+		Year:   2010,
+		Author: authors.Author{FirstName: "FirstName", LastName: "LastName"},
+	}
+	result := suite.DB.Create(&book)
+	suite.Require().NoError(result.Error)
+
+	req, _ := http.NewRequest("GET", fmt.Sprintf("/api/books/%d", book.ID), nil)
+	w := httptest.NewRecorder()
+	suite.Router.ServeHTTP(w, req)
+
+	suite.Require().Equal(http.StatusOK, w.Code)
+
+	var responseBook books.Book
+	err := json.Unmarshal(w.Body.Bytes(), &responseBook)
+	suite.Require().NoError(err)
+	suite.Assert().NotEmpty(responseBook.CreatedAt)
+	suite.Assert().NotEmpty(responseBook.UpdatedAt)
+	suite.Assert().Equal("Test Book", responseBook.Name)
+	suite.Assert().Equal(uint(300), responseBook.Pages)
+	suite.Assert().Equal(uint(2010), responseBook.Year)
+	suite.Assert().Equal("FirstName", responseBook.Author.FirstName)
+	suite.Assert().Equal("LastName", responseBook.Author.LastName)
+	suite.Assert().Equal("", responseBook.Author.SecondName)
+}
+
+func (suite *BooksTestSuite) TestBookFindNotFound() {
+	req, _ := http.NewRequest("GET", "/api/books/100500", nil)
+	w := httptest.NewRecorder()
+	suite.Router.ServeHTTP(w, req)
+
+	suite.Require().Equal(http.StatusNotFound, w.Code)
+	responseJson, _ := json.Marshal(router.MessageResponse{Message: "record not found"})
+	suite.Assert().JSONEq(string(responseJson), w.Body.String())
 }
 
 func TestSuite(t *testing.T) {

@@ -4,6 +4,7 @@ import (
 	"books/authors"
 	"errors"
 	"net/http"
+	"strconv"
 
 	"github.com/gin-gonic/gin"
 	"gorm.io/gorm"
@@ -22,6 +23,7 @@ func (handler handler) Route(router *gin.RouterGroup) {
 	authors := router.Group("/books")
 
 	authors.POST("", handler.create)
+	authors.GET("/:id", handler.find)
 }
 
 func (handler handler) create(context *gin.Context) {
@@ -49,4 +51,18 @@ func (handler handler) create(context *gin.Context) {
 	}
 
 	context.JSON(http.StatusCreated, book)
+}
+
+func (handler handler) find(context *gin.Context) {
+	id, _ := strconv.Atoi(context.Param("id"))
+
+	var book Book
+	result := handler.DB.Preload("Author").First(&book, id)
+	if result.Error != nil {
+		context.Error(result.Error)
+
+		return
+	}
+
+	context.JSON(http.StatusOK, book)
 }
